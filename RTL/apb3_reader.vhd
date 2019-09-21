@@ -40,9 +40,9 @@ port (
 end apb3_reader;
 architecture architecture_apb3_reader of apb3_reader is
    -- signal, component etc. declarations
-	signal Internal_Reg : apb3_Reg_array(Number_Reg-1 downto 0):=(others=>(others=>'0'));
-	signal Internal_Reg_In : apb3_Reg_array(Number_Reg-1 downto 0):=(others=>(others=>'0'));
-
+	signal Internal_Reg : apb3_Reg_array(Number_Reg-1 downto 0):=(others=>(others=>'1'));
+	signal Internal_Reg_In : apb3_Reg_array(Number_Reg-1 downto 0):=(others=>(others=>'1'));
+ signal adress ,wdata: std_logic_vector(31 downto 0);
 begin
 --=============================================================================
 -- Top level output port assignments
@@ -52,7 +52,6 @@ apb3_master_Back.ready     <= '1';  -- pready_o Is always ready,there will not b
 apb3_master_Back.slverr    <= '0';  -- Slave error is always '0' as there will not be
                       --any slave error.
 
-                apb3_master_Back.rdata        <= Internal_Reg_IN(to_integer(unsigned(apb3_master.address(g_APB3_IF_ADDRESS_WIDTH-1 downto 2))) );
          
    -- architecture body
 
@@ -61,16 +60,22 @@ WRITE_DECODE_PROC:
     BEGIN
         IF(reset = '0')THEN
             for I in 0 to Number_Reg-1 loop
-                Internal_Reg(I)<= (OTHERS => '0');
+                Internal_Reg(I)<= (OTHERS => '1');
+wdata<=(OTHERS => '0');
             end loop;
 
 
         ELSIF (apb3_master.clk'EVENT AND apb3_master.clk = '1') THEN
+    adress <=apb3_master.address;
             IF ((apb3_master.sel = '1') AND (apb3_master.nRW = '1') AND (apb3_master.enable = '1')) THEN
                     Internal_Reg(to_integer(unsigned(apb3_master.address(g_APB3_IF_ADDRESS_WIDTH-1 downto 2))))<=apb3_master.wdata;
+    wdata<=apb3_master.wdata;
+
             END IF;
         END IF;
     END PROCESS;
+apb3_master_Back.rdata        <= Internal_Reg_IN(to_integer(unsigned(apb3_master.address(g_APB3_IF_ADDRESS_WIDTH-1 downto 2))) );
+
 G: for I in 0 to Number_Reg-1 generate
     if_gen : if REG_DEFINITION(i)=R generate
         Internal_Reg_IN(I)<=Regs_In(i);
